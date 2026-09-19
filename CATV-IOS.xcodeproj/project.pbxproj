@@ -1,0 +1,379 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		10000001 /* CATVIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000001 /* CATVIOSApp.swift */; };
+		10000002 /* CameraModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000002 /* CameraModels.swift */; };
+		10000003 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000003 /* CameraManager.swift */; };
+		10000004 /* StarDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000004 /* StarDetector.swift */; };
+		10000005 /* AstroStackingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000005 /* AstroStackingEngine.swift */; };
+		10000006 /* MotionSensorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000006 /* MotionSensorManager.swift */; };
+		10000007 /* PhotoLibraryExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000007 /* PhotoLibraryExporter.swift */; };
+		10000008 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000008 /* CameraPreviewView.swift */; };
+		10000009 /* TopGlassBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000009 /* TopGlassBar.swift */; };
+		10000010 /* ModeCarousel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000010 /* ModeCarousel.swift */; };
+		10000011 /* AstroControlPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000011 /* AstroControlPanel.swift */; };
+		10000012 /* HorizonLevelerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000012 /* HorizonLevelerOverlay.swift */; };
+		10000013 /* HistogramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000013 /* HistogramView.swift */; };
+		10000014 /* CapturedMediaDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000014 /* CapturedMediaDetailSheet.swift */; };
+		10000015 /* BottomControlBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000015 /* BottomControlBar.swift */; };
+		10000016 /* MainCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000016 /* MainCameraView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		00000007 /* CATV-IOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "CATV-IOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		20000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		20000001 /* CATVIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CATVIOSApp.swift; sourceTree = "<group>"; };
+		20000002 /* CameraModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraModels.swift; sourceTree = "<group>"; };
+		20000003 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		20000004 /* StarDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarDetector.swift; sourceTree = "<group>"; };
+		20000005 /* AstroStackingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroStackingEngine.swift; sourceTree = "<group>"; };
+		20000006 /* MotionSensorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionSensorManager.swift; sourceTree = "<group>"; };
+		20000007 /* PhotoLibraryExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryExporter.swift; sourceTree = "<group>"; };
+		20000008 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewView.swift; sourceTree = "<group>"; };
+		20000009 /* TopGlassBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopGlassBar.swift; sourceTree = "<group>"; };
+		20000010 /* ModeCarousel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeCarousel.swift; sourceTree = "<group>"; };
+		20000011 /* AstroControlPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroControlPanel.swift; sourceTree = "<group>"; };
+		20000012 /* HorizonLevelerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonLevelerOverlay.swift; sourceTree = "<group>"; };
+		20000013 /* HistogramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistogramView.swift; sourceTree = "<group>"; };
+		20000014 /* CapturedMediaDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturedMediaDetailSheet.swift; sourceTree = "<group>"; };
+		20000015 /* BottomControlBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomControlBar.swift; sourceTree = "<group>"; };
+		20000016 /* MainCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainCameraView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		00000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		00000003 = {
+			isa = PBXGroup;
+			children = (
+				30000001 /* CATV-IOS */,
+				30000002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		30000001 /* CATV-IOS */ = {
+			isa = PBXGroup;
+			children = (
+				30000010 /* App */,
+				30000020 /* Camera */,
+				30000030 /* Stacking */,
+				30000040 /* Sensors */,
+				30000050 /* UI */,
+				30000060 /* Utilities */,
+			);
+			path = "CATV-IOS";
+			sourceTree = "<group>";
+		};
+		30000010 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				20000001 /* CATVIOSApp.swift */,
+				20000000 /* Info.plist */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		30000020 /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				20000002 /* CameraModels.swift */,
+				20000003 /* CameraManager.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		30000030 /* Stacking */ = {
+			isa = PBXGroup;
+			children = (
+				20000004 /* StarDetector.swift */,
+				20000005 /* AstroStackingEngine.swift */,
+			);
+			path = Stacking;
+			sourceTree = "<group>";
+		};
+		30000040 /* Sensors */ = {
+			isa = PBXGroup;
+			children = (
+				20000006 /* MotionSensorManager.swift */,
+			);
+			path = Sensors;
+			sourceTree = "<group>";
+		};
+		30000050 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				20000016 /* MainCameraView.swift */,
+				20000008 /* CameraPreviewView.swift */,
+				20000009 /* TopGlassBar.swift */,
+				20000010 /* ModeCarousel.swift */,
+				20000011 /* AstroControlPanel.swift */,
+				20000012 /* HorizonLevelerOverlay.swift */,
+				20000013 /* HistogramView.swift */,
+				20000014 /* CapturedMediaDetailSheet.swift */,
+				20000015 /* BottomControlBar.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		30000060 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				20000007 /* PhotoLibraryExporter.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		30000002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				00000007 /* CATV-IOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		00000002 /* CATV-IOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 40000001 /* Build configuration list for PBXNativeTarget "CATV-IOS" */;
+			buildPhases = (
+				00000004 /* Sources */,
+				00000005 /* Frameworks */,
+				00000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "CATV-IOS";
+			productName = "CATV-IOS";
+			productReference = 00000007 /* CATV-IOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		00000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1530;
+				TargetAttributes = {
+					00000002 = {
+						CreatedOnToolsVersion = 15.3;
+					};
+				};
+			};
+			buildConfigurationList = 40000000 /* Build configuration list for PBXProject "CATV-IOS" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 00000003;
+			productRefGroup = 30000002 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				00000002 /* CATV-IOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		00000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		00000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				10000001 /* CATVIOSApp.swift in Sources */,
+				10000002 /* CameraModels.swift in Sources */,
+				10000003 /* CameraManager.swift in Sources */,
+				10000004 /* StarDetector.swift in Sources */,
+				10000005 /* AstroStackingEngine.swift in Sources */,
+				10000006 /* MotionSensorManager.swift in Sources */,
+				10000007 /* PhotoLibraryExporter.swift in Sources */,
+				10000008 /* CameraPreviewView.swift in Sources */,
+				10000009 /* TopGlassBar.swift in Sources */,
+				10000010 /* ModeCarousel.swift in Sources */,
+				10000011 /* AstroControlPanel.swift in Sources */,
+				10000012 /* HorizonLevelerOverlay.swift in Sources */,
+				10000013 /* HistogramView.swift in Sources */,
+				10000014 /* CapturedMediaDetailSheet.swift in Sources */,
+				10000015 /* BottomControlBar.swift in Sources */,
+				10000016 /* MainCameraView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		50000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		50000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		50000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "CATV-IOS/App/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.astrocam.CATV-IOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		50000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "CATV-IOS/App/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.astrocam.CATV-IOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		40000000 /* Build configuration list for PBXProject "CATV-IOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				50000001 /* Debug */,
+				50000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		40000001 /* Build configuration list for PBXNativeTarget "CATV-IOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				50000003 /* Debug */,
+				50000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 00000001 /* Project object */;
+}
