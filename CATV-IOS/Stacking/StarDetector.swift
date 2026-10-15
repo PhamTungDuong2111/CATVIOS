@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import CoreGraphics
 import Accelerate
 
@@ -10,20 +11,42 @@ struct StarPoint {
     var size: Float
 }
 
-/// Thuật toán nhận diện điểm sao và ước tính độ dịch chuyển giữa các khung hình
+/// Thuật toán nhận diện điểm sao và ước tính độ dịch chuyển giữa các khung hình (Accelerate vDSP Native)
 final class StarDetector {
+
+    /// Phát hiện các điểm sao từ ảnh UIImage (tiện lợi cho cả camera thật và giả lập SkySimulator)
+    static func detectStars(from image: UIImage, maxStars: Int = 80) -> [StarPoint] {
+        guard let cgImage = image.cgImage else { return [] }
+        let width = cgImage.width
+        let height = cgImage.height
+
+        var luma = [UInt8](repeating: 0, count: width * height)
+        let colorSpace = CGColorSpaceCreateDeviceGray()
+        guard let context = CGContext(
+            data: &luma,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.none.rawValue
+        ) else { return [] }
+
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return detectStars(luminanceData: luma, width: width, height: height, maxStars: maxStars)
+    }
 
     /// Phát hiện các điểm sao sáng từ dữ liệu độ sáng (Grayscale buffer)
     static func detectStars(
         luminanceData: [UInt8],
         width: Int,
         height: Int,
-        threshold: Float = 3.0,
+        threshold: Float = 2.5,
         maxStars: Int = 100
     ) -> [StarPoint] {
-        guard width > 0, height > 0, luminanceData.count >= width * height else { return [] }
+        guard width > 8, height > 8, luminanceData.count >= width * height else { return [] }
 
-        // 1. Tính toán giá trị độ sáng trung bình và độ lệch chuẩn
+        // 1. Tính toán giá trị độ sáng trung bình và độ lệch chuẩn bằng vDSP
         var mean: Float = 0
         var stdDev: Float = 0
         var floatArray = [Float](repeating: 0, count: luminanceData.count)
@@ -31,7 +54,7 @@ final class StarDetector {
         vDSP_vfltu8(luminanceData, 1, &floatArray, 1, vDSP_Length(luminanceData.count))
         vDSP_normalize(floatArray, 1, nil, 1, &mean, &stdDev, vDSP_Length(luminanceData.count))
 
-        let cutoff = mean + threshold * stdDev
+        let cutoff = max(mean + threshold * stdDev, 120.0)
         var stars: [StarPoint] = []
 
         // 2. Quét tìm các cực đại địa phương (Local Maxima) 3x3
@@ -42,11 +65,10 @@ final class StarDetector {
                 let val = floatArray[idx]
 
                 if val > cutoff {
-                    // Kiểm tra xem có phải điểm sáng nhất trong ô lân cận 3x3 không
                     if val > floatArray[idx - 1] && val > floatArray[idx + 1] &&
                        val > floatArray[idx - width] && val > floatArray[idx + width] {
 
-                        // Tính trọng tâm (Centroid) để đạt độ chính xác sub-pixel
+                        // Tính trọng tâm (Subpixel Centroid)
                         var sumW: Float = 0
                         var sumX: Float = 0
                         var sumY: Float = 0
@@ -81,7 +103,6 @@ final class StarDetector {
     static func estimateOffset(refStars: [StarPoint], currentStars: [StarPoint]) -> CGPoint? {
         guard refStars.count >= 4, currentStars.count >= 4 else { return nil }
 
-        // Sử dụng matching đơn giản các sao sáng nhất
         let topRef = Array(refStars.prefix(10))
         let topCur = Array(currentStars.prefix(10))
 
@@ -96,7 +117,7 @@ final class StarDetector {
                 return d1 < d2
             }) {
                 let dist = hypot(Double(closest.x - r.x), Double(closest.y - r.y))
-                if dist < 50.0 { // Giới hạn dịch chuyển hợp lý giữa 2 khung liền kề
+                if dist < 60.0 {
                     totalDx += CGFloat(closest.x - r.x)
                     totalDy += CGFloat(closest.y - r.y)
                     matchCount += 1

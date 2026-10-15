@@ -6,6 +6,7 @@ import Accelerate
 import Combine
 
 /// Động cơ xếp chồng ảnh phơi sáng thiên văn thời gian thực (Real-time Live Stacking Pipeline)
+/// Tương thích hoàn toàn với thuật toán của ChupAnhTV-fixed trên Android
 final class AstroStackingEngine: ObservableObject {
 
     @Published var isStacking: Bool = false
@@ -13,15 +14,16 @@ final class AstroStackingEngine: ObservableObject {
     @Published var rejectedFrames: Int = 0
     @Published var totalExposureSeconds: Float = 0.0
     @Published var detectedStarCount: Int = 0
-    @Published var histogramData: [Float] = [Float](repeating: 0, count: 64)
+    @Published var histogramData: [Int]? = nil
+    @Published var currentPreviewImage: UIImage? = nil
 
     // Cấu hình thuật toán
-    var stackingMode: StackingMode = .deepSkyAverage
-    var targetFrames: Int = 30
-    var midtoneStretch: Float = 0.18
-    var blackPoint: Float = 0.015
+    @Published var selectedMode: StackingMode = .deepSkyAverage
+    @Published var targetFrames: Int = 30
+    @Published var midtoneStretch: Float = 0.18
+    @Published var blackPoint: Float = 0.015
 
-    // Bộ đệm tích lũy 32-bit float cho chất lượng HDR cao
+    // Bộ đệm tích lũy 32-bit float cho độ sâu màu và dải động cao
     private var accumulatorR: [Float]?
     private var accumulatorG: [Float]?
     private var accumulatorB: [Float]?
@@ -32,11 +34,15 @@ final class AstroStackingEngine: ObservableObject {
     private var referenceStars: [StarPoint]?
     private let processingQueue = DispatchQueue(label = "com.astrocam.stackingQueue", qos = .userInitiated)
 
-    // Khung hình trực tiếp gần nhất để xuất ảnh thường
+    // Khung hình trực tiếp gần nhất
     private var latestPixelBuffer: CVPixelBuffer?
+    private var latestImage: UIImage?
     private let lock = NSLock()
 
-    func startStacking() {
+    func startStacking(mode: StackingMode? = nil, targetFrames: Int? = nil) {
+        if let mode = mode { self.selectedMode = mode }
+        if let target = targetFrames { self.targetFrames = target }
+
         processingQueue.async { [weak self] in
             guard let self = self else { return }
             self.resetStack()
@@ -75,18 +81,100 @@ final class AstroStackingEngine: ObservableObject {
         lock.unlock()
 
         guard isStacking else {
-            // Chế độ xem trước: tính toán số lượng sao và histogram
-            calculatePreviewMetrics(pixelBuffer)
+            calculateMetricsFromPixelBuffer(pixelBuffer)
             return
         }
 
         processingQueue.async { [weak self] in
             guard let self = self, self.isStacking else { return }
-            self.performStacking(pixelBuffer: pixelBuffer, exposureTime: exposureTime)
+            self.performStackingOnPixelBuffer(pixelBuffer: pixelBuffer, exposureTime: exposureTime)
         }
     }
 
-    private func performStacking(pixelBuffer: CVPixelBuffer, exposureTime: Float) {
+    /// Xử lý khung hình giả lập nhận từ SkySimulator
+    func processBitmap(_ image: UIImage, exposureTime: Float) {
+        lock.lock()
+        latestImage = image
+        lock.unlock()
+
+        guard isStacking else {
+            calculateMetricsFromImage(image)
+            return
+        }
+
+        processingQueue.async { [weak self] in
+            guard let self = self, self.isStacking else { return }
+            self.performStackingOnImage(image: image, exposureTime: exposureTime)
+        }
+    }
+
+    // MARK: - Core Stacking Logic
+
+    private func performStackingOnImage(image: UIImage, exposureTime: Float) {
+        guard let cgImage = image.cgImage else { return }
+        let width = cgImage.width
+        let height = cgImage.height
+
+        var rgba = [UInt8](repeating: 0, count: width * height * 4)
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let context = CGContext(
+            data: &rgba,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        var curR = [Float](repeating: 0, count: width * height)
+        var curG = [Float](repeating: 0, count: width * height)
+        var curB = [Float](repeating: 0, count: width * height)
+        var luma = [UInt8](repeating: 0, count: width * height)
+
+        for i in 0..<(width * height) {
+            let idx = i * 4
+            let r = rgba[idx]
+            let g = rgba[idx + 1]
+            let b = rgba[idx + 2]
+
+            curR[i] = Float(r) / 255.0
+            curG[i] = Float(g) / 255.0
+            curB[i] = Float(b) / 255.0
+
+            let lum = (Int(r) * 2126 + Int(g) * 7152 + Int(b) * 722) / 10000
+            luma[i] = UInt8(clamping: lum)
+        }
+
+        // Nhận diện sao
+        let stars = StarDetector.detectStars(luminanceData: luma, width: width, height: height)
+        DispatchQueue.main.async {
+            self.detectedStarCount = stars.count
+        }
+
+        if selectedMode.requiresAlignment {
+            if referenceStars == nil {
+                if stars.count >= 4 {
+                    referenceStars = stars
+                } else {
+                    DispatchQueue.main.async { self.rejectedFrames += 1 }
+                    return
+                }
+            } else {
+                if StarDetector.estimateOffset(refStars: referenceStars!, currentStars: stars) == nil {
+                    DispatchQueue.main.async { self.rejectedFrames += 1 }
+                    return
+                }
+            }
+        }
+
+        accumulate(curR: curR, curG: curG, curB: curB, width: width, height: height, exposureTime: exposureTime)
+        updateHistogram(from: luma)
+    }
+
+    private func performStackingOnPixelBuffer(pixelBuffer: CVPixelBuffer, exposureTime: Float) {
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
@@ -97,43 +185,38 @@ final class AstroStackingEngine: ObservableObject {
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
         let pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer)
 
-        // 1. Trích xuất kênh màu và độ sáng (Grayscale)
-        var luma = [UInt8](repeating: 0, count: width * height)
+        guard pixelFormat == kCVPixelFormatType_32BGRA else { return }
+
+        let buffer = baseAddress.assumingMemoryBound(to: UInt8.self)
         var curR = [Float](repeating: 0, count: width * height)
         var curG = [Float](repeating: 0, count: width * height)
         var curB = [Float](repeating: 0, count: width * height)
+        var luma = [UInt8](repeating: 0, count: width * height)
 
-        if pixelFormat == kCVPixelFormatType_32BGRA {
-            let buffer = baseAddress.assumingMemoryBound(to: UInt8.self)
-            for y in 0..<height {
-                for x in 0..<width {
-                    let srcIdx = y * bytesPerRow + x * 4
-                    let dstIdx = y * width + x
+        for y in 0..<height {
+            for x in 0..<width {
+                let srcIdx = y * bytesPerRow + x * 4
+                let dstIdx = y * width + x
 
-                    let b = buffer[srcIdx]
-                    let g = buffer[srcIdx + 1]
-                    let r = buffer[srcIdx + 2]
+                let b = buffer[srcIdx]
+                let g = buffer[srcIdx + 1]
+                let r = buffer[srcIdx + 2]
 
-                    curR[dstIdx] = Float(r) / 255.0
-                    curG[dstIdx] = Float(g) / 255.0
-                    curB[dstIdx] = Float(b) / 255.0
+                curR[dstIdx] = Float(r) / 255.0
+                curG[dstIdx] = Float(g) / 255.0
+                curB[dstIdx] = Float(b) / 255.0
 
-                    // Rec. 709 luma
-                    let lum = UInt8(clamping: Int(0.2126 * Double(r) + 0.7152 * Double(g) + 0.0722 * Double(b)))
-                    luma[dstIdx] = lum
-                }
+                let lum = (Int(r) * 2126 + Int(g) * 7152 + Int(b) * 722) / 10000
+                luma[dstIdx] = UInt8(clamping: lum)
             }
-        } else {
-            return
         }
 
-        // 2. Nhận diện sao và căn chỉnh
         let stars = StarDetector.detectStars(luminanceData: luma, width: width, height: height)
         DispatchQueue.main.async {
             self.detectedStarCount = stars.count
         }
 
-        if stackingMode.requiresAlignment {
+        if selectedMode.requiresAlignment {
             if referenceStars == nil {
                 if stars.count >= 4 {
                     referenceStars = stars
@@ -142,7 +225,6 @@ final class AstroStackingEngine: ObservableObject {
                     return
                 }
             } else {
-                // Kiểm tra căn chỉnh
                 if StarDetector.estimateOffset(refStars: referenceStars!, currentStars: stars) == nil {
                     DispatchQueue.main.async { self.rejectedFrames += 1 }
                     return
@@ -150,7 +232,11 @@ final class AstroStackingEngine: ObservableObject {
             }
         }
 
-        // 3. Khởi tạo Accumulator nếu chưa có
+        accumulate(curR: curR, curG: curG, curB: curB, width: width, height: height, exposureTime: exposureTime)
+        updateHistogram(from: luma)
+    }
+
+    private func accumulate(curR: [Float], curG: [Float], curB: [Float], width: Int, height: Int, exposureTime: Float) {
         if accumulatorR == nil || accumulatorWidth != width || accumulatorHeight != height {
             accumulatorWidth = width
             accumulatorHeight = height
@@ -161,16 +247,16 @@ final class AstroStackingEngine: ObservableObject {
             DispatchQueue.main.async {
                 self.stackedFrames = 1
                 self.totalExposureSeconds = exposureTime
+                self.currentPreviewImage = self.exportCurrentStackedBitmap()
             }
             return
         }
 
-        // 4. Cộng dồn theo chế độ
         let count = width * height
         let currentCount = stackedFrames
 
-        switch stackingMode {
-        case .deepSkyAverage, .kappaSigma:
+        switch selectedMode {
+        case .deepSkyAverage:
             // Running Average: Acc = Acc * (N/(N+1)) + New * (1/(N+1))
             let factorOld = Float(currentCount) / Float(currentCount + 1)
             let factorNew = 1.0 / Float(currentCount + 1)
@@ -181,8 +267,26 @@ final class AstroStackingEngine: ObservableObject {
                 accumulatorB![i] = accumulatorB![i] * factorOld + curB[i] * factorNew
             }
 
-        case .starTrailsMax:
-            // Star Trails: Acc = max(Acc, New)
+        case .kappaSigma:
+            // Kappa-Sigma Outlier Clipping: Lọc các vệ tinh và vệt máy bay bay ngang
+            let factorOld = Float(currentCount) / Float(currentCount + 1)
+            let factorNew = 1.0 / Float(currentCount + 1)
+
+            for i in 0..<count {
+                let diffR = abs(curR[i] - accumulatorR![i])
+                let diffG = abs(curG[i] - accumulatorG![i])
+                let diffB = abs(curB[i] - accumulatorB![i])
+
+                // Nếu có vệt sáng dị thường (vệ tinh/máy bay) lớn hơn ngưỡng, bỏ qua điểm ảnh đó
+                if diffR < 0.35 && diffG < 0.35 && diffB < 0.35 {
+                    accumulatorR![i] = accumulatorR![i] * factorOld + curR[i] * factorNew
+                    accumulatorG![i] = accumulatorG![i] * factorOld + curG[i] * factorNew
+                    accumulatorB![i] = accumulatorB![i] * factorOld + curB[i] * factorNew
+                }
+            }
+
+        case .starTrails:
+            // Star Trails Max Intensity: Acc = max(Acc, New)
             for i in 0..<count {
                 accumulatorR![i] = max(accumulatorR![i], curR[i])
                 accumulatorG![i] = max(accumulatorG![i], curG[i])
@@ -193,13 +297,34 @@ final class AstroStackingEngine: ObservableObject {
         DispatchQueue.main.async {
             self.stackedFrames += 1
             self.totalExposureSeconds += exposureTime
+            self.currentPreviewImage = self.exportCurrentStackedBitmap()
+
             if self.stackedFrames >= self.targetFrames {
                 self.isStacking = false
             }
         }
     }
 
-    private func calculatePreviewMetrics(_ pixelBuffer: CVPixelBuffer) {
+    private func updateHistogram(from luma: [UInt8]) {
+        var bins = [Int](repeating: 0, count: 64)
+        let step = 4
+        for i in stride(from: 0, to: luma.count, by: step) {
+            let bin = min(63, Int(luma[i]) / 4)
+            bins[bin] += 1
+        }
+        DispatchQueue.main.async {
+            self.histogramData = bins
+        }
+    }
+
+    private func calculateMetricsFromImage(_ image: UIImage) {
+        let stars = StarDetector.detectStars(from: image)
+        DispatchQueue.main.async {
+            self.detectedStarCount = stars.count
+        }
+    }
+
+    private func calculateMetricsFromPixelBuffer(_ pixelBuffer: CVPixelBuffer) {
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
@@ -211,49 +336,34 @@ final class AstroStackingEngine: ObservableObject {
         let buf = base.assumingMemoryBound(to: UInt8.self)
 
         var bins = [Int](repeating: 0, count: 64)
-        let sampleStep = 8
+        var lumaSamples = [UInt8]()
+        let step = 8
 
-        for y in stride(from: 0, to: height, by: sampleStep) {
-            for x in stride(from: 0, to: width, by: sampleStep) {
+        for y in stride(from: 0, to: height, by: step) {
+            for x in stride(from: 0, to: width, by: step) {
                 let idx = y * bytesPerRow + x * 4
                 let b = Int(buf[idx])
                 let g = Int(buf[idx + 1])
                 let r = Int(buf[idx + 2])
                 let lum = (r * 299 + g * 587 + b * 114) / 1000
-                let binIdx = min(63, lum / 4)
-                bins[binIdx] += 1
+                let bin = min(63, lum / 4)
+                bins[bin] += 1
+                lumaSamples.append(UInt8(clamping: lum))
             }
         }
 
-        let maxVal = Float(bins.max() ?? 1)
-        let normalized = bins.map { Float($0) / maxVal }
-
         DispatchQueue.main.async {
-            self.histogramData = normalized
+            self.histogramData = bins
+            self.detectedStarCount = StarDetector.detectStars(luminanceData: lumaSamples, width: width / step, height: height / step).count
         }
     }
 
-    /// Xuất ảnh chụp thường (Snapshot) từ khung hình xem trước hiện tại
-    func exportLiveSnapshot() -> UIImage? {
-        lock.lock()
-        guard let buffer = latestPixelBuffer else {
-            lock.unlock()
-            return nil
-        }
-        let ciImage = CIImage(cvPixelBuffer: buffer)
-        lock.unlock()
-
-        let context = CIContext()
-        if let cgImage = context.createCGImage(ciImage, from: ciImage.extent) {
-            return UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
-        }
-        return nil
-    }
-
-    /// Xuất ảnh thiên văn sau khi đã áp dụng kéo dãn MTF Stretch
-    func exportStackedResult() -> UIImage? {
+    /// Xuất ảnh chụp thiên văn sau khi áp dụng MTF Midtone Stretch và Black Point Clipping
+    func exportCurrentStackedBitmap() -> UIImage? {
         guard let r = accumulatorR, let g = accumulatorG, let b = accumulatorB,
-              accumulatorWidth > 0, accumulatorHeight > 0 else { return nil }
+              accumulatorWidth > 0, accumulatorHeight > 0 else {
+            return exportLiveSnapshot()
+        }
 
         let w = accumulatorWidth
         let h = accumulatorHeight
@@ -297,6 +407,26 @@ final class AstroStackingEngine: ObservableObject {
                 intent: .defaultIntent
               ) else { return nil }
 
-        return UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
+        return UIImage(cgImage: cgImage, scale: 1.0, orientation: .up)
+    }
+
+    /// Xuất ảnh thường từ khung hình xem trước hiện tại
+    func exportLiveSnapshot() -> UIImage? {
+        lock.lock()
+        defer { lock.unlock() }
+
+        if let img = latestImage {
+            return img
+        }
+
+        if let buffer = latestPixelBuffer {
+            let ciImage = CIImage(cvPixelBuffer: buffer)
+            let context = CIContext()
+            if let cg = context.createCGImage(ciImage, from: ciImage.extent) {
+                return UIImage(cgImage: cg, scale: 1.0, orientation: .right)
+            }
+        }
+
+        return nil
     }
 }

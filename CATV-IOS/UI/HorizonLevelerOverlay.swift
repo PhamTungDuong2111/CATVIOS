@@ -1,62 +1,102 @@
 import SwiftUI
 
-/// Lớp phủ Thước thủy cân bằng điện tử & Phương vị la bàn (Artificial Horizon Leveler & Compass Reticle)
+/// Lớp phủ Thước thủy điện tử, lưới bố cục 1/3 và phương vị la bàn
+/// Tương thích 100% với LevelerOverlay.kt trên Android
 struct HorizonLevelerOverlay: View {
     @ObservedObject var motionManager: MotionSensorManager
     var isRedMode: Bool
+    var showGrid: Bool = true
 
-    var lineColor: Color {
-        if motionManager.isLevel {
-            return Color.green
-        }
-        return isRedMode ? Color(red: 1.0, green: 0.2, blue: 0.2) : Color(red: 0.0, green: 0.9, blue: 1.0)
+    var levelColor: Color {
+        isRedMode ? Color(red: 1.0, green: 0.32, blue: 0.32) : Color(red: 0.0, green: 0.902, blue: 0.463) // #00E676
+    }
+
+    var tiltColor: Color {
+        isRedMode ? Color.red.opacity(0.4) : Color.white.opacity(0.4)
+    }
+
+    var gridColor: Color {
+        isRedMode ? Color.red.opacity(0.14) : Color.white.opacity(0.14)
+    }
+
+    var crossColor: Color {
+        isRedMode ? Color.red.opacity(0.55) : Color(red: 0.0, green: 0.898, blue: 1.0).opacity(0.55)
     }
 
     var body: some View {
         GeometryReader { geometry in
             let w = geometry.size.width
             let h = geometry.size.height
-            let center = CGPoint(x: w / 2, y: h / 2)
+            let cx = w / 2.0
+            let cy = h / 2.0
 
             ZStack {
-                // 1. Vòng ngắm trung tâm (Center Reticle)
-                Circle()
-                    .stroke(lineColor.opacity(0.6), lineWidth: 1.5)
-                    .frame(width: 44, height: 44)
-                    .position(center)
+                // 1. Lưới quy tắc 1/3 (Rule-of-Thirds Grid)
+                if showGrid {
+                    Path { path in
+                        // Đường dọc
+                        path.move(to: CGPoint(x: w / 3.0, y: 0))
+                        path.addLine(to: CGPoint(x: w / 3.0, y: h))
 
-                Circle()
-                    .fill(lineColor)
-                    .frame(width: 4, height: 4)
-                    .position(center)
+                        path.move(to: CGPoint(x: w * 2.0 / 3.0, y: 0))
+                        path.addLine(to: CGPoint(x: w * 2.0 / 3.0, y: h))
 
-                // 2. Đường chân trời xoay theo góc Roll (Artificial Horizon Line)
+                        // Đường ngang
+                        path.move(to: CGPoint(x: 0, y: h / 3.0))
+                        path.addLine(to: CGPoint(x: w, y: h / 3.0))
+
+                        path.move(to: CGPoint(x: 0, y: h * 2.0 / 3.0))
+                        path.addLine(to: CGPoint(x: w, y: h * 2.0 / 3.0))
+                    }
+                    .stroke(gridColor, lineWidth: 1.0)
+                }
+
+                // 2. Tâm ngắm chữ thập trung tâm (Center Crosshair)
+                let crossSize: CGFloat = 16.0
                 Path { path in
-                    path.move(to: CGPoint(x: center.x - 90, y: center.y))
-                    path.addLine(to: CGPoint(x: center.x - 30, y: center.y))
+                    path.move(to: CGPoint(x: cx - crossSize, y: cy))
+                    path.addLine(to: CGPoint(x: cx + crossSize, y: cy))
 
-                    path.move(to: CGPoint(x: center.x + 30, y: center.y))
-                    path.addLine(to: CGPoint(x: center.x + 90, y: center.y))
+                    path.move(to: CGPoint(x: cx, y: cy - crossSize))
+                    path.addLine(to: CGPoint(x: cx, y: cy + crossSize))
                 }
-                .stroke(lineColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .stroke(crossColor, lineWidth: 1.5)
+
+                // 3. Thước thủy chân trời (Horizon Leveler Bar xoay theo góc -roll)
+                let barLength: CGFloat = 70.0
+                let centerGap: CGFloat = 18.0
+                let isLevel = motionManager.isLevel
+
+                Path { path in
+                    // Cánh trái
+                    path.move(to: CGPoint(x: cx - barLength, y: cy))
+                    path.addLine(to: CGPoint(x: cx - centerGap, y: cy))
+
+                    // Cánh phải
+                    path.move(to: CGPoint(x: cx + centerGap, y: cy))
+                    path.addLine(to: CGPoint(x: cx + barLength, y: cy))
+                }
+                .stroke(isLevel ? levelColor : tiltColor, style: StrokeStyle(lineWidth: isLevel ? 3.5 : 2.0, lineCap: .round))
                 .rotationEffect(.degrees(-motionManager.rollDegrees), anchor: .center)
-                .position(center)
 
-                // 3. Hiển thị thông số góc nghiêng & La bàn
-                VStack(spacing: 2) {
-                    Text(String(format: "%.1f°", motionManager.rollDegrees))
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .foregroundColor(lineColor)
-
-                    Text(String(format: "Pitch: %.1f° | Hdg: %03.0f°", motionManager.pitchDegrees, max(0, motionManager.yawDegrees)))
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.8))
+                // 4. Dòng trạng thái la bàn, góc ngẩng và góc nghiêng ở đáy
+                VStack {
+                    Spacer()
+                    Text(String(
+                        format: "%@  |  Góc ngẩng: %+.1f°  |  Nghiêng: %+.1f° %@",
+                        motionManager.orientation.cardinalDirection,
+                        motionManager.pitchDegrees,
+                        motionManager.rollDegrees,
+                        isLevel ? "✓ CHUẨN" : ""
+                    ))
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundColor(isLevel ? levelColor : (isRedMode ? Color.red.opacity(0.8) : Color.white.opacity(0.8)))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(Color.black.opacity(0.45))
+                    .cornerRadius(8)
+                    .padding(.bottom, 12)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.black.opacity(0.4))
-                .cornerRadius(6)
-                .position(x: center.x, y: center.y + 60)
             }
         }
         .allowsHitTesting(false)

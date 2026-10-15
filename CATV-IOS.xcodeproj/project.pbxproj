@@ -23,6 +23,7 @@
 		10000014 /* CapturedMediaDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000014 /* CapturedMediaDetailSheet.swift */; };
 		10000015 /* BottomControlBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000015 /* BottomControlBar.swift */; };
 		10000016 /* MainCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000016 /* MainCameraView.swift */; };
+		10000017 /* SkySimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000017 /* SkySimulator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 		20000014 /* CapturedMediaDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturedMediaDetailSheet.swift; sourceTree = "<group>"; };
 		20000015 /* BottomControlBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomControlBar.swift; sourceTree = "<group>"; };
 		20000016 /* MainCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainCameraView.swift; sourceTree = "<group>"; };
+		20000017 /* SkySimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkySimulator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +103,7 @@
 			children = (
 				20000004 /* StarDetector.swift */,
 				20000005 /* AstroStackingEngine.swift */,
+				20000017 /* SkySimulator.swift */,
 			);
 			path = Stacking;
 			sourceTree = "<group>";
@@ -228,6 +231,7 @@
 				10000014 /* CapturedMediaDetailSheet.swift in Sources */,
 				10000015 /* BottomControlBar.swift in Sources */,
 				10000016 /* MainCameraView.swift in Sources */,
+				10000017 /* SkySimulator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

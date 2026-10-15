@@ -1,75 +1,98 @@
 import SwiftUI
 
-/// Biểu đồ sắc độ Histogram thời gian thực
+/// Biểu đồ sắc độ Histogram chuẩn thiên văn với tỷ lệ Logarithmic
+/// Tương thích 100% với AstroHistogramView.kt trên Android
 struct HistogramView: View {
-    let histogramData: [Float]
+    let histogramData: [Int]?
     var isRedMode: Bool
 
-    var curveColor: Color {
-        isRedMode ? Color.red : Color(red: 0.0, green: 0.9, blue: 1.0)
+    var accentColor: Color {
+        isRedMode ? Color(red: 1.0, green: 0.165, blue: 0.294) : Color(red: 0.0, green: 0.898, blue: 1.0)
+    }
+
+    var fillColor: Color {
+        isRedMode ? Color.red.opacity(0.4) : Color(red: 0.0, green: 0.69, blue: 1.0).opacity(0.35)
+    }
+
+    var borderColor: Color {
+        isRedMode ? Color.red.opacity(0.3) : Color(red: 0.0, green: 0.898, blue: 1.0).opacity(0.2)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("HISTOGRAM")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundColor(.white.opacity(0.7))
-
+        ZStack(alignment: .topLeading) {
             GeometryReader { geo in
                 let w = geo.size.width
                 let h = geo.size.height
 
-                Path { path in
-                    guard histogramData.count > 1 else { return }
-                    let step = w / CGFloat(histogramData.count - 1)
+                if let data = histogramData, data.count > 1 {
+                    let maxVal = max(1, data.max() ?? 1)
+                    let bins = data.count
+                    let step = w / CGFloat(bins - 1)
 
-                    path.move(to: CGPoint(x: 0, y: h))
+                    // Path tô màu vùng dưới (Fill Gradient Path)
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: h))
 
-                    for (index, val) in histogramData.enumerated() {
-                        let x = CGFloat(index) * step
-                        let y = h - CGFloat(min(1.0, max(0.0, val))) * h
-                        if index == 0 {
-                            path.addLine(to: CGPoint(x: x, y: y))
-                        } else {
+                        for i in 0..<bins {
+                            let x = CGFloat(i) * step
+                            let normY = Double(data[i]) / Double(maxVal)
+                            // Logarithmic dynamic range
+                            let logY = log10(1.0 + normY * 9.0) / log10(10.0)
+                            let y = h - CGFloat(logY) * (h - 4.0)
                             path.addLine(to: CGPoint(x: x, y: y))
                         }
-                    }
 
-                    path.addLine(to: CGPoint(x: w, y: h))
-                    path.closeSubpath()
-                }
-                .fill(
-                    LinearGradient(
-                        colors: [curveColor.opacity(0.6), curveColor.opacity(0.1)],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        path.addLine(to: CGPoint(x: w, y: h))
+                        path.closeSubpath()
+                    }
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [fillColor, Color.clear]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
 
-                Path { path in
-                    guard histogramData.count > 1 else { return }
-                    let step = w / CGFloat(histogramData.count - 1)
+                    // Đường cong viền (Stroke Path)
+                    Path { path in
+                        for i in 0..<bins {
+                            let x = CGFloat(i) * step
+                            let normY = Double(data[i]) / Double(maxVal)
+                            let logY = log10(1.0 + normY * 9.0) / log10(10.0)
+                            let y = h - CGFloat(logY) * (h - 4.0)
 
-                    for (index, val) in histogramData.enumerated() {
-                        let x = CGFloat(index) * step
-                        let y = h - CGFloat(min(1.0, max(0.0, val))) * h
-                        if index == 0 {
-                            path.move(to: CGPoint(x: x, y: y))
-                        } else {
-                            path.addLine(to: CGPoint(x: x, y: y))
+                            if i == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                path.addLine(to: CGPoint(x: x, y: y))
+                            }
                         }
                     }
+                    .stroke(accentColor, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                } else {
+                    // Đường chuẩn khi chưa có dữ liệu
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: h * 0.5))
+                        path.addLine(to: CGPoint(x: w, y: h * 0.5))
+                    }
+                    .stroke(borderColor, lineWidth: 1)
                 }
-                .stroke(curveColor, lineWidth: 1.5)
             }
+            .padding(4)
+
+            // Mini HUD Label
+            Text("HISTOGRAM")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(isRedMode ? Color.red.opacity(0.8) : Color(red: 0.0, green: 0.898, blue: 1.0).opacity(0.8))
+                .padding(.leading, 6)
+                .padding(.top, 4)
         }
-        .padding(8)
-        .frame(width: 140, height: 75)
-        .background(Color.black.opacity(0.6))
-        .cornerRadius(10)
+        .frame(width: 140, height: 70)
+        .background(Color(red: 10/255.0, green: 14/255.0, blue: 23/255.0, opacity: 0.8))
+        .cornerRadius(8)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(borderColor, lineWidth: 1)
         )
     }
 }

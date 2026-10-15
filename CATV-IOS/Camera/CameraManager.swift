@@ -3,7 +3,7 @@ import AVFoundation
 import UIKit
 import Combine
 
-/// Quản lý phần cứng Camera qua AVFoundation (AVCaptureSession, Photo, Video, Torch, ISO, Shutter)
+/// Quản lý phần cứng Camera qua AVFoundation (AVCaptureSession, Photo, Video, Torch, ISO, Shutter, Focus)
 final class CameraManager: NSObject, ObservableObject {
 
     @Published var state = CameraState()
@@ -23,13 +23,11 @@ final class CameraManager: NSObject, ObservableObject {
 
     private var currentVideoURL: URL?
     private var recordingTimer: Timer?
+    private var pendingPhotoCallback: ((UIImage?, URL?) -> Void)?
+    private var pendingVideoCallback: ((URL?) -> Void)?
 
     // Delegate chuyển tiếp frame cho bộ xếp chồng thiên văn
     var onVideoFrameAvailable: ((CVPixelBuffer, Float) -> Void)?
-
-    // Callbacks
-    var onPhotoCaptured: ((UIImage?) -> Void)?
-    var onVideoRecorded: ((URL?) -> Void)?
 
     override init() {
         super.init()
@@ -37,6 +35,12 @@ final class CameraManager: NSObject, ObservableObject {
     }
 
     private func checkPermissionsAndSetup() {
+        #if targetEnvironment(simulator)
+        // Simulator không có phần cứng camera thật
+        self.isSessionRunning = true
+        return
+        #endif
+
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             setupCaptureSession()
@@ -111,8 +115,8 @@ final class CameraManager: NSObject, ObservableObject {
     }
 
     private func updateCameraCapabilities(_ device: AVCaptureDevice) {
-        let minIso = device.activeFormat.minISO
-        let maxIso = device.activeFormat.maxISO
+        let minIso = Int(device.activeFormat.minISO)
+        let maxIso = Int(device.activeFormat.maxISO)
         let minExp = Float(CMTimeGetSeconds(device.activeFormat.minExposureDuration))
         let maxExp = Float(CMTimeGetSeconds(device.activeFormat.maxExposureDuration))
 
@@ -121,7 +125,7 @@ final class CameraManager: NSObject, ObservableObject {
             self.state.maxIso = maxIso
             self.state.minExposureSeconds = minExp
             self.state.maxExposureSeconds = maxExp
-            self.state.iso = min(max(100.0, minIso), maxIso)
+            self.state.iso = min(max(1600, minIso), maxIso)
         }
     }
 
@@ -140,7 +144,6 @@ final class CameraManager: NSObject, ObservableObject {
 
         switch mode {
         case .photo, .video:
-            // Tự động lấy nét và đo sáng như máy ảnh tiêu chuẩn
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
@@ -152,28 +155,53 @@ final class CameraManager: NSObject, ObservableObject {
             }
 
         case .astro, .pro:
-            // Khóa lấy nét ở vô cực và cho phép chỉnh tay ISO / Shutter Speed
-            if device.isFocusModeSupported(.locked) {
-                device.setFocusModeLocked(lensPosition: 1.0, completionHandler: nil)
+            // Nếu bật khóa vô cực thì lock lensPosition = 1.0f
+            if state.isInfinityLocked {
+                if device.isFocusModeSupported(.locked) {
+                    device.setFocusModeLocked(lensPosition: 1.0, completionHandler: nil)
+                }
             }
-            applyManualExposure(iso: state.iso, duration: state.exposureDurationSeconds)
+            applyManualExposure(iso: state.iso, duration: state.exposureTimeSeconds)
         }
     }
 
-    func setManualExposure(iso: Float, duration: Float) {
-        state.iso = iso
-        state.exposureDurationSeconds = duration
+    func setIso(_ newIso: Int) {
+        state.iso = newIso
         if state.mode == .astro || state.mode == .pro {
-            applyManualExposure(iso: iso, duration: duration)
+            applyManualExposure(iso: newIso, duration: state.exposureTimeSeconds)
         }
     }
 
-    private func applyManualExposure(iso: Float, duration: Float) {
+    func setExposureTime(_ newExp: Float) {
+        state.exposureTimeSeconds = newExp
+        if state.mode == .astro || state.mode == .pro {
+            applyManualExposure(iso: state.iso, duration: newExp)
+        }
+    }
+
+    func setInfinityFocusLock(_ isLock: Bool) {
+        state.isInfinityLocked = isLock
         guard let device = activeVideoDevice else { return }
         try? device.lockForConfiguration()
         defer { device.unlockForConfiguration() }
 
-        let clampedIso = min(max(iso, device.activeFormat.minISO), device.activeFormat.maxISO)
+        if isLock {
+            if device.isFocusModeSupported(.locked) {
+                device.setFocusModeLocked(lensPosition: 1.0, completionHandler: nil)
+            }
+        } else {
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+        }
+    }
+
+    private func applyManualExposure(iso: Int, duration: Float) {
+        guard let device = activeVideoDevice else { return }
+        try? device.lockForConfiguration()
+        defer { device.unlockForConfiguration() }
+
+        let clampedIso = min(max(Float(iso), device.activeFormat.minISO), device.activeFormat.maxISO)
         let clampedDuration = min(max(duration, Float(CMTimeGetSeconds(device.activeFormat.minExposureDuration))), Float(CMTimeGetSeconds(device.activeFormat.maxExposureDuration)))
         let time = CMTimeMakeWithSeconds(Float64(clampedDuration), preferredTimescale: 1000000)
 
@@ -183,7 +211,7 @@ final class CameraManager: NSObject, ObservableObject {
     // MARK: - Flash & Torch Controls
 
     func toggleFlash() {
-        let allModes = FlashMode.allCases
+        let allModes: [FlashMode] = [.off, .on, .auto, .torch]
         if let idx = allModes.firstIndex(of: state.flashMode) {
             let nextMode = allModes[(idx + 1) % allModes.count]
             setFlashMode(nextMode)
@@ -238,7 +266,19 @@ final class CameraManager: NSObject, ObservableObject {
 
     // MARK: - Chụp ảnh (Photo Capture)
 
-    func takePhoto() {
+    func takePhoto(completion: ((UIImage?, URL?) -> Void)? = nil) {
+        #if targetEnvironment(simulator)
+        let sim = SkySimulator()
+        if let simImg = sim.generateNextFrame() {
+            self.lastCapturedThumbnail = simImg
+            PhotoLibraryExporter.saveImageToPhotoLibrary(simImg) { _, url in
+                completion?(simImg, url)
+            }
+        }
+        return
+        #endif
+
+        self.pendingPhotoCallback = completion
         let settings = AVCapturePhotoSettings()
         switch state.flashMode {
         case .on: settings.flashMode = .on
@@ -252,15 +292,15 @@ final class CameraManager: NSObject, ObservableObject {
 
     // MARK: - Quay Video (Video Recording)
 
-    func toggleVideoRecording() {
-        if movieFileOutput.isRecording {
-            stopVideoRecording()
+    func toggleVideoRecording(onStarted: (() -> Void)? = nil, onError: ((String) -> Void)? = nil, onFinished: ((URL?) -> Void)? = nil) {
+        if state.isRecordingVideo {
+            stopRecording(completion: onFinished)
         } else {
-            startVideoRecording()
+            startRecording(onStarted: onStarted, onError: onError)
         }
     }
 
-    private func startVideoRecording() {
+    func startRecording(onStarted: (() -> Void)? = nil, onError: ((String) -> Void)? = nil) {
         guard !movieFileOutput.isRecording else { return }
 
         let tempDir = FileManager.default.temporaryDirectory
@@ -271,6 +311,7 @@ final class CameraManager: NSObject, ObservableObject {
 
         state.isRecordingVideo = true
         state.recordingDurationSeconds = 0
+        onStarted?()
 
         recordingTimer?.invalidate()
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -280,8 +321,9 @@ final class CameraManager: NSObject, ObservableObject {
         }
     }
 
-    private func stopVideoRecording() {
+    func stopRecording(completion: ((URL?) -> Void)? = nil) {
         guard movieFileOutput.isRecording else { return }
+        self.pendingVideoCallback = completion
         movieFileOutput.stopRecording()
         recordingTimer?.invalidate()
         recordingTimer = nil
@@ -293,19 +335,20 @@ final class CameraManager: NSObject, ObservableObject {
 extension CameraManager: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         guard let data = photo.fileDataRepresentation(), let image = UIImage(data: data) else {
-            onPhotoCaptured?(nil)
+            pendingPhotoCallback?(nil, nil)
+            pendingPhotoCallback = nil
             return
         }
 
         DispatchQueue.main.async {
             self.lastCapturedThumbnail = image
-            self.onPhotoCaptured?(image)
         }
 
         // Tự động lưu vào Photo Library
-        PhotoLibraryExporter.saveImageToPhotoLibrary(image) { success, err in
-            if success {
-                print("Đã lưu ảnh chụp vào Photos thành công!")
+        PhotoLibraryExporter.saveImageToPhotoLibrary(image) { [weak self] success, url in
+            DispatchQueue.main.async {
+                self?.pendingPhotoCallback?(image, url)
+                self?.pendingPhotoCallback = nil
             }
         }
     }
@@ -319,12 +362,11 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
         recordingTimer = nil
 
         guard error == nil else {
-            print("Lỗi quay video: \(String(describing: error))")
-            onVideoRecorded?(nil)
+            pendingVideoCallback?(nil)
+            pendingVideoCallback = nil
             return
         }
 
-        // Tạo thumbnail từ video
         let asset = AVAsset(url: outputFileURL)
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
@@ -337,10 +379,10 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
 
         // Tự động lưu vào Photo Library
         PhotoLibraryExporter.saveVideoToPhotoLibrary(fileURL: outputFileURL) { [weak self] success, _ in
-            if success {
-                print("Đã lưu video vào Photos thành công!")
+            DispatchQueue.main.async {
+                self?.pendingVideoCallback?(outputFileURL)
+                self?.pendingVideoCallback = nil
             }
-            self?.onVideoRecorded?(outputFileURL)
         }
     }
 }
@@ -349,7 +391,7 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
 extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: [AVCaptureConnection]) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        let duration = state.exposureDurationSeconds
+        let duration = state.exposureTimeSeconds
         onVideoFrameAvailable?(pixelBuffer, duration)
     }
 }
