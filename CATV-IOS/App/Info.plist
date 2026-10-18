@@ -30,6 +30,8 @@
     <string>CATV cần quyền lưu ảnh chụp và video đã quay vào Thư viện Ảnh của bạn.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>CATV cần quyền truy cập Thư viện Ảnh để hiển thị ảnh vừa chụp và lưu kết quả.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>CATV cần quyền truy cập Vị trí để tính toán chính xác góc ngẩng và phương vị các hành tinh trên bầu trời theo tọa độ thực tế của bạn.</string>
     <key>UILaunchScreen</key>
     <dict/>
     <key>UISupportedInterfaceOrientations</key>

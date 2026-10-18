@@ -90,11 +90,16 @@ enum StackingMode: String, CaseIterable, Identifiable {
 }
 
 /// Dữ liệu cảm biến con quay hồi chuyển & la bàn
-struct OrientationData {
+struct OrientationData: Equatable {
     var pitch: Float = 0.0      // Góc ngẩng bầu trời (-90° đến +90°)
     var roll: Float = 0.0       // Góc nghiêng chân trời (-180° đến +180°)
     var azimuth: Float = 0.0    // Hướng la bàn (0° - 360°)
     var isLevel: Bool = true    // Tripod đã cân bằng đường chân trời (±1.5°)
+    var rotationMatrix: [Float] = [
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0
+    ]
 
     var cardinalDirection: String {
         let index = Int(((azimuth + 22.5).truncatingRemainder(dividingBy: 360)) / 45.0)
@@ -114,16 +119,16 @@ struct OrientationData {
 
 /// Trạng thái hoạt động hiện tại của Camera
 struct CameraState {
-    var mode: AppCameraMode = .photo
+    var mode: AppCameraMode = .astro
     var flashMode: FlashMode = .off
     var isFrontCamera: Bool = false
     var isRecordingVideo: Bool = false
     var recordingDurationSeconds: Int = 0
 
     // Phơi sáng & Lấy nét thủ công
-    var isInfinityLocked: Bool = false
+    var isInfinityLocked: Bool = true
     var iso: Int = 1600
-    var exposureTimeSeconds: Float = 1.0
+    var exposureTimeSeconds: Float = 2.0
 
     var minIso: Int = 100
     var maxIso: Int = 12800

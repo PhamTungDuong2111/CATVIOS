@@ -8,8 +8,11 @@ struct TopGlassBar: View {
 
     @Binding var showLeveler: Bool
     @Binding var showHistogram: Bool
+    @Binding var showPlanetOverlay: Bool
+    @Binding var showPlanetBar: Bool
     @Binding var isRedMode: Bool
     var isSimMode: Bool
+    var visiblePlanetCount: Int = 0
 
     @State private var blinkAlpha: Double = 1.0
 
@@ -26,7 +29,7 @@ struct TopGlassBar: View {
         VStack(spacing: 6) {
             // Thanh HUD chính dạng Glass Pill
             HStack(spacing: 8) {
-                // Trái: Flash + Leveler + Red Mode
+                // Trái: Flash + Leveler + Planet AR + Red Mode
                 HStack(spacing: 6) {
                     // Flash Toggle Button
                     Button(action: {
@@ -51,6 +54,20 @@ struct TopGlassBar: View {
                         Text("📐")
                             .font(.system(size: 15))
                             .foregroundColor(showLeveler ? accentColor : .gray)
+                            .frame(width: 36, height: 36)
+                    }
+
+                    // Planet AR Overlay Toggle Button
+                    Button(action: {
+                        let impact = UIImpactFeedbackGenerator(style: .light)
+                        impact.impactOccurred()
+                        withAnimation {
+                            showPlanetOverlay.toggle()
+                        }
+                    }) {
+                        Text("🪐")
+                            .font(.system(size: 15))
+                            .foregroundColor(showPlanetOverlay ? accentColor : .gray)
                             .frame(width: 36, height: 36)
                     }
 
@@ -143,18 +160,45 @@ struct TopGlassBar: View {
             )
             .padding(.horizontal, 12)
 
-            // Dòng phụ hiển thị số sao nhận diện & số khung bị lọc trong chế độ THIÊN VĂN
+            // Dòng phụ hiển thị số sao nhận diện, nút mở PlanetQuickBar & số khung bị lọc trong chế độ THIÊN VĂN
             if cameraManager.state.mode == .astro {
                 HStack {
-                    HStack(spacing: 4) {
-                        Text(isSimMode ? "🧪 Giả lập bầu trời" : "⭐ \(stackingEngine.detectedStarCount) sao nhận diện")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(stackingEngine.detectedStarCount >= 4 ? accentColor : .gray)
+                    HStack(spacing: 8) {
+                        // Badge đếm sao
+                        HStack(spacing: 4) {
+                            Text(isSimMode ? "🧪 Giả lập bầu trời" : "⭐ \(stackingEngine.detectedStarCount) sao nhận diện")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(stackingEngine.detectedStarCount >= 4 ? accentColor : .gray)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(bgOverlay)
+                        .cornerRadius(14)
+
+                        // Nút bật/tắt PlanetQuickBar
+                        Button(action: {
+                            let impact = UIImpactFeedbackGenerator(style: .light)
+                            impact.impactOccurred()
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showPlanetBar.toggle()
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Text("🪐 \(visiblePlanetCount) hành tinh")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(showPlanetOverlay ? accentColor : .gray)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(showPlanetBar ? (isRedMode ? Color.red.opacity(0.3) : Color(red: 0.0, green: 0.898, blue: 1.0).opacity(0.2)) : bgOverlay)
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(showPlanetBar ? accentColor : Color.clear, lineWidth: 1.0)
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(bgOverlay)
-                    .cornerRadius(14)
 
                     Spacer()
 

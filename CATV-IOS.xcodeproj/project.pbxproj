@@ -24,6 +24,13 @@
 		10000015 /* BottomControlBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000015 /* BottomControlBar.swift */; };
 		10000016 /* MainCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000016 /* MainCameraView.swift */; };
 		10000017 /* SkySimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000017 /* SkySimulator.swift */; };
+		10000018 /* PlanetInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000018 /* PlanetInfo.swift */; };
+		10000019 /* SolarSystemEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000019 /* SolarSystemEngine.swift */; };
+		10000020 /* AstroLocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000020 /* AstroLocationManager.swift */; };
+		10000021 /* PlanetOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000021 /* PlanetOverlay.swift */; };
+		10000022 /* PlanetQuickBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000022 /* PlanetQuickBar.swift */; };
+		10000023 /* PlanetDetailDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000023 /* PlanetDetailDialog.swift */; };
+		10000024 /* BackgroundExtraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000024 /* BackgroundExtraction.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +53,13 @@
 		20000015 /* BottomControlBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomControlBar.swift; sourceTree = "<group>"; };
 		20000016 /* MainCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainCameraView.swift; sourceTree = "<group>"; };
 		20000017 /* SkySimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkySimulator.swift; sourceTree = "<group>"; };
+		20000018 /* PlanetInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanetInfo.swift; sourceTree = "<group>"; };
+		20000019 /* SolarSystemEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarSystemEngine.swift; sourceTree = "<group>"; };
+		20000020 /* AstroLocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroLocationManager.swift; sourceTree = "<group>"; };
+		20000021 /* PlanetOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanetOverlay.swift; sourceTree = "<group>"; };
+		20000022 /* PlanetQuickBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanetQuickBar.swift; sourceTree = "<group>"; };
+		20000023 /* PlanetDetailDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanetDetailDialog.swift; sourceTree = "<group>"; };
+		20000024 /* BackgroundExtraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundExtraction.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				30000010 /* App */,
+				30000070 /* Astro */,
 				30000020 /* Camera */,
 				30000030 /* Stacking */,
 				30000040 /* Sensors */,
@@ -89,6 +104,16 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		30000070 /* Astro */ = {
+			isa = PBXGroup;
+			children = (
+				20000018 /* PlanetInfo.swift */,
+				20000019 /* SolarSystemEngine.swift */,
+				20000020 /* AstroLocationManager.swift */,
+			);
+			path = Astro;
+			sourceTree = "<group>";
+		};
 		30000020 /* Camera */ = {
 			isa = PBXGroup;
 			children = (
@@ -104,6 +129,7 @@
 				20000004 /* StarDetector.swift */,
 				20000005 /* AstroStackingEngine.swift */,
 				20000017 /* SkySimulator.swift */,
+				20000024 /* BackgroundExtraction.swift */,
 			);
 			path = Stacking;
 			sourceTree = "<group>";
@@ -128,6 +154,9 @@
 				20000013 /* HistogramView.swift */,
 				20000014 /* CapturedMediaDetailSheet.swift */,
 				20000015 /* BottomControlBar.swift */,
+				20000021 /* PlanetOverlay.swift */,
+				20000022 /* PlanetQuickBar.swift */,
+				20000023 /* PlanetDetailDialog.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -232,6 +261,13 @@
 				10000015 /* BottomControlBar.swift in Sources */,
 				10000016 /* MainCameraView.swift in Sources */,
 				10000017 /* SkySimulator.swift in Sources */,
+				10000018 /* PlanetInfo.swift in Sources */,
+				10000019 /* SolarSystemEngine.swift in Sources */,
+				10000020 /* AstroLocationManager.swift in Sources */,
+				10000021 /* PlanetOverlay.swift in Sources */,
+				10000022 /* PlanetQuickBar.swift in Sources */,
+				10000023 /* PlanetDetailDialog.swift in Sources */,
+				10000024 /* BackgroundExtraction.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
